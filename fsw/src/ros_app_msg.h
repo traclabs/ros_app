@@ -33,9 +33,12 @@
 /*
 ** ros App command codes
 */
-#define ROS_APP_NOOP_CC           0
+// TODO @seth g switched the noop cmd ID with the hello world cmd ID to get the print to change
+// still not sure how to get these cmd IDs into the cmds themselves
+#define ROS_APP_NOOP_CC           3
 #define ROS_APP_RESET_COUNTERS_CC 1
-#define ROS_APP_PROCESS_CC        2
+#define ROS_APP_PROCESS_CC		  2
+#define ROS_APP_HELLO_WORLD_CC	  0
 
 /*************************************************************************/
 

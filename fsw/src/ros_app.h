@@ -45,6 +45,13 @@
 /***********************************************************************/
 #define ROS_APP_PIPE_DEPTH 32 /* Depth of the Command Pipe for Application */
 
+#define ROS_APP_NUMBER_OF_TABLES 1 /* Number of Table(s) */
+
+/* Define filenames of default data images for tables */
+#define ROS_APP_TABLE_FILE "/cf/ros_app_tbl.tbl"
+
+#define ROS_APP_TABLE_OUT_OF_RANGE_ERR_CODE -1
+
 #define ROS_APP_TBL_ELEMENT_1_MAX 10
 /************************************************************************
 ** Type Definitions
@@ -83,6 +90,7 @@ typedef struct
     uint16 PipeDepth;
 
     CFE_EVS_BinFilter_t EventFilters[ROS_APP_EVENT_COUNTS];
+    CFE_TBL_Handle_t    TblHandles[ROS_APP_NUMBER_OF_TABLES];
 
 } ROS_APP_Data_t;
 
@@ -101,7 +109,12 @@ int32 ROS_APP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg);
 int32 ROS_APP_ResetCounters(const ROS_APP_ResetCountersCmd_t *Msg);
 int32 ROS_APP_Process(const ROS_APP_ProcessCmd_t *Msg);
 int32 ROS_APP_Noop(const ROS_APP_NoopCmd_t *Msg);
+void ROS_APP_HelloCmd(const ROS_APP_NoopCmd_t *Msg);
+void  ROS_APP_GetCrc(const char *TableName);
+
+int32 ROS_APP_TblValidationFunc(void *TblData);
 
 bool ROS_APP_VerifyCmdLength(CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength);
+
 
 #endif /* _ros_app_h_ */

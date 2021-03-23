@@ -31,6 +31,7 @@
 #include "ros_app_events.h"
 #include "ros_app_version.h"
 #include "ros_app.h"
+#include "ros_app_table.h"
 
 #include <string.h>
 
@@ -86,6 +87,18 @@ void ROS_APP_Main(void)
         ** Performance Log Entry Stamp
         */
         CFE_ES_PerfLogEntry(ROS_APP_PERF_ID);
+
+        if (status == CFE_SUCCESS)
+        {
+            ROS_APP_ProcessCommandPacket(SBBufPtr);
+        }
+        else
+        {
+            CFE_EVS_SendEvent(ROS_APP_PIPE_ERR_EID, CFE_EVS_EventType_ERROR,
+                              "ROS APP: SB Pipe Read Error, App Will Exit");
+
+            ROS_APP_Data.RunStatus = CFE_ES_RunStatus_APP_ERROR;
+        }
     }
 
     /*
@@ -139,6 +152,8 @@ int32 ROS_APP_Init(void)
     ROS_APP_Data.EventFilters[5].Mask    = 0x0000;
     ROS_APP_Data.EventFilters[6].EventID = ROS_APP_PIPE_ERR_EID;
     ROS_APP_Data.EventFilters[6].Mask    = 0x0000;
+    ROS_APP_Data.EventFilters[7].EventID = ROS_APP_HELLO_WORLD_INF_EID;
+    ROS_APP_Data.EventFilters[7].Mask    = 0x0000;
 
     /*
     ** Register the events
@@ -186,6 +201,21 @@ int32 ROS_APP_Init(void)
         return (status);
     }
 
+    /*
+    ** Register Table(s)
+    */
+    status = CFE_TBL_Register(&ROS_APP_Data.TblHandles[0], "RosAppTable", sizeof(ROS_APP_Table_t),
+                              CFE_TBL_OPT_DEFAULT, ROS_APP_TblValidationFunc);
+    if (status != CFE_SUCCESS)
+    {
+        CFE_ES_WriteToSysLog("Ros App: Error Registering Table, RC = 0x%08lX\n", (unsigned long)status);
+
+        return (status);
+    }
+    else
+    {
+        status = CFE_TBL_Load(ROS_APP_Data.TblHandles[0], CFE_TBL_SRC_FILE, ROS_APP_TABLE_FILE);
+    }
 
     CFE_EVS_SendEvent(ROS_APP_STARTUP_INF_EID, CFE_EVS_EventType_INFORMATION, "ros App Initialized.%s",
                       ROS_APP_VERSION_STRING);
@@ -268,6 +298,14 @@ void ROS_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr)
 
             break;
 
+        case ROS_APP_HELLO_WORLD_CC:
+            if (ROS_APP_VerifyCmdLength(&SBBufPtr->Msg, sizeof(ROS_APP_ResetCountersCmd_t)))
+            {
+                ROS_APP_HelloCmd((ROS_APP_NoopCmd_t *)SBBufPtr);
+            }
+
+            break;
+
         /* default case already found during FC vs length test */
         default:
             CFE_EVS_SendEvent(ROS_APP_COMMAND_ERR_EID, CFE_EVS_EventType_ERROR,
@@ -290,6 +328,8 @@ void ROS_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr)
 /* * * * * * * * * * * * * * * * * * * * * * * *  * * * * * * *  * *  * * * * */
 int32 ROS_APP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg)
 {
+  int i;
+  
     /*
     ** Get command execution counters...
     */
@@ -302,13 +342,21 @@ int32 ROS_APP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg)
     CFE_SB_TimeStampMsg(&ROS_APP_Data.HkTlm.TlmHeader.Msg);
     CFE_SB_TransmitMsg(&ROS_APP_Data.HkTlm.TlmHeader.Msg, true);
 
+    /*
+    ** Manage any pending table loads, validations, etc.
+    */
+    for (i = 0; i < ROS_APP_NUMBER_OF_TABLES; i++)
+    {
+        CFE_TBL_Manage(ROS_APP_Data.TblHandles[i]);
+    }
+
     return CFE_SUCCESS;
 
 } /* End of ROS_APP_ReportHousekeeping() */
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
 /*                                                                            */
-/* ROS_APP_Noop -- ros NOOP commands                                        */
+/* ROS_APP_Noop -- ROS NOOP commands                                        */
 /*                                                                            */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
 int32 ROS_APP_Noop(const ROS_APP_NoopCmd_t *Msg)
@@ -322,6 +370,21 @@ int32 ROS_APP_Noop(const ROS_APP_NoopCmd_t *Msg)
     return CFE_SUCCESS;
 
 } /* End of ROS_APP_Noop */
+
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
+/*                                                                            */
+/* ROS_APP_HelloCmd -- ros NOOP commands                                        */
+/*                                                                            */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
+void ROS_APP_HelloCmd(const ROS_APP_NoopCmd_t *Msg)
+{
+    ROS_APP_Data.CmdCounter++;
+
+    CFE_EVS_SendEvent(ROS_APP_HELLO_WORLD_INF_EID, CFE_EVS_EventType_INFORMATION, "ros: Hello, ros! %s",
+                      ROS_APP_VERSION);
+
+} /* End of ROS_APP_HelloCmd */
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
 /*  Name:  ROS_APP_ResetCounters                                               */
@@ -380,3 +443,92 @@ bool ROS_APP_VerifyCmdLength(CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength)
 
 } /* End of ROS_APP_VerifyCmdLength() */
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                 */
+/* ROS_APP_GetCrc -- Output CRC                                     */
+/*                                                                 */
+/*                                                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+void ROS_APP_GetCrc(const char *TableName)
+{
+    int32          status;
+    uint32         Crc;
+    CFE_TBL_Info_t TblInfoPtr;
+
+    status = CFE_TBL_GetInfo(&TblInfoPtr, TableName);
+    if (status != CFE_SUCCESS)
+    {
+        CFE_ES_WriteToSysLog("Ros App: Error Getting Table Info");
+    }
+    else
+    {
+        Crc = TblInfoPtr.Crc;
+        CFE_ES_WriteToSysLog("Ros App: CRC: 0x%08lX\n\n", (unsigned long)Crc);
+    }
+
+    return;
+
+} /* End of ROS_APP_GetCrc */
+
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                 */
+/* ROS_APP_TblValidationFunc -- Verify contents of First Table      */
+/* buffer contents                                                 */
+/*                                                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+int32 ROS_APP_TblValidationFunc(void *TblData)
+{
+    int32               ReturnCode = CFE_SUCCESS;
+    ROS_APP_Table_t *TblDataPtr = (ROS_APP_Table_t *)TblData;
+
+    /*
+    ** Ros Table Validation
+    */
+    if (TblDataPtr->Int1 > ROS_APP_TBL_ELEMENT_1_MAX)
+    {
+        /* First element is out of range, return an appropriate error code */
+        ReturnCode = ROS_APP_TABLE_OUT_OF_RANGE_ERR_CODE;
+    }
+
+    return ReturnCode;
+
+} /* End of ROS_APP_TBLValidationFunc() */
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
+/*  Name:  ROS_APP_Process                                                     */
+/*                                                                            */
+/*  Purpose:                                                                  */
+/*         This function Process Ground Station Command                       */
+/*                                                                            */
+/* * * * * * * * * * * * * * * * * * * * * * * *  * * * * * * *  * *  * * * * */
+int32 ROS_APP_Process(const ROS_APP_ProcessCmd_t *Msg)
+{
+    int32               status;
+    ROS_APP_Table_t *TblPtr;
+    const char *        TableName = "ROS_APP.RosAppTable";
+
+    /* Ros Use of Table */
+
+    status = CFE_TBL_GetAddress((void *)&TblPtr, ROS_APP_Data.TblHandles[0]);
+
+    if (status < CFE_SUCCESS)
+    {
+        CFE_ES_WriteToSysLog("Ros App: Fail to get table address: 0x%08lx", (unsigned long)status);
+        return status;
+    }
+
+    CFE_ES_WriteToSysLog("Ros App: Table Value 1: %d  Value 2: %d", TblPtr->Int1, TblPtr->Int2);
+
+    ROS_APP_GetCrc(TableName);
+
+    status = CFE_TBL_ReleaseAddress(ROS_APP_Data.TblHandles[0]);
+    if (status != CFE_SUCCESS)
+    {
+        CFE_ES_WriteToSysLog("Ros App: Fail to release table address: 0x%08lx", (unsigned long)status);
+        return status;
+    }
+
+    return CFE_SUCCESS;
+
+} /* End of ROS_APP_ProcessCC */
