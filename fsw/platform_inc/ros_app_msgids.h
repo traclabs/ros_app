@@ -30,9 +30,14 @@
 #ifndef _ros_app_msgids_h_
 #define _ros_app_msgids_h_
 
-#define ROS_APP_CMD_MID     0x1696
-#define ROS_APP_SEND_HK_MID 0x1697
-#define ROS_APP_HK_TLM_MID  0x0697
+#include "cfe_msgids.h"
+
+/* Command Message IDs */
+#define ROS_APP_CMD_MID        (CFE_PLATFORM_CMD_MID_BASE + 0x96)
+#define ROS_APP_SEND_HK_MID    (CFE_PLATFORM_CMD_MID_BASE + 0x97)
+
+/* Telemetry Message IDs */
+#define ROS_APP_HK_TLM_MID     (CFE_PLATFORM_TLM_MID_BASE + 0x97)
 
 #endif /* _ros_app_msgids_h_ */
 
