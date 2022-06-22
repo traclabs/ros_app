@@ -52,7 +52,7 @@ void ROS_APP_Main(void)
     /*
     ** Register the app with Executive services
     */
-    CFE_ES_RegisterApp();
+    // CFE_ES_RegisterApp();
 
     /*
     ** Create the first Performance Log entry
@@ -168,7 +168,7 @@ int32 ROS_APP_Init(void)
     /*
     ** Initialize housekeeping packet (clear user data area).
     */
-    CFE_MSG_Init(&ROS_APP_Data.HkTlm.TlmHeader.Msg, ROS_APP_HK_TLM_MID, sizeof(ROS_APP_Data.HkTlm));
+    CFE_MSG_Init(&ROS_APP_Data.HkTlm.TlmHeader.Msg, CFE_SB_ValueToMsgId(ROS_APP_HK_TLM_MID), sizeof(ROS_APP_Data.HkTlm));
 
     /*
     ** Create Software Bus message pipe.
@@ -183,7 +183,7 @@ int32 ROS_APP_Init(void)
     /*
     ** Subscribe to Housekeeping request commands
     */
-    status = CFE_SB_Subscribe(ROS_APP_SEND_HK_MID, ROS_APP_Data.CommandPipe);
+    status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(ROS_APP_SEND_HK_MID), ROS_APP_Data.CommandPipe);
     if (status != CFE_SUCCESS)
     {
         CFE_ES_WriteToSysLog("ros App: Error Subscribing to HK request, RC = 0x%08lX\n", (unsigned long)status);
@@ -193,7 +193,7 @@ int32 ROS_APP_Init(void)
     /*
     ** Subscribe to ground command packets
     */
-    status = CFE_SB_Subscribe(ROS_APP_CMD_MID, ROS_APP_Data.CommandPipe);
+    status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(ROS_APP_CMD_MID), ROS_APP_Data.CommandPipe);
     if (status != CFE_SUCCESS)
     {
         CFE_ES_WriteToSysLog("ros App: Error Subscribing to Command, RC = 0x%08lX\n", (unsigned long)status);
@@ -238,7 +238,7 @@ void ROS_APP_ProcessCommandPacket(CFE_SB_Buffer_t *SBBufPtr)
 
     CFE_MSG_GetMsgId(&SBBufPtr->Msg, &MsgId);
 
-    switch (MsgId)
+    switch (CFE_SB_MsgIdToValue(MsgId))
     {
         case ROS_APP_CMD_MID:
             ROS_APP_ProcessGroundCommand(SBBufPtr);
