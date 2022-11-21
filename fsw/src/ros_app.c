@@ -202,6 +202,18 @@ int32 ROS_APP_Init(void)
     }
 
     /*
+    ** Subscribe to the /rosout telemetry packets.
+    */
+    /* TODO: have email out to cFE mailing list on how to resolve CPU2 mids instead of just hardcoding 0x1999 here. */
+    status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(0x1999), ROS_APP_Data.CommandPipe);
+    if (status != CFE_SUCCESS)
+    {
+        CFE_ES_WriteToSysLog("ros App: Error Subscribing to /rosout topic, RC = 0x%08lX\n", (unsigned long)status);
+
+        return (status);
+    }
+
+    /*
     ** Register Table(s)
     */
     status = CFE_TBL_Register(&ROS_APP_Data.TblHandles[0], "RosAppTable", sizeof(ROS_APP_Table_t),
@@ -246,6 +258,11 @@ void ROS_APP_ProcessCommandPacket(CFE_SB_Buffer_t *SBBufPtr)
 
         case ROS_APP_SEND_HK_MID:
             ROS_APP_ReportHousekeeping((CFE_MSG_CommandHeader_t *)SBBufPtr);
+            break;
+
+        /* TODO: have email out to cFE mailing list on how to resolve CPU2 mids instead of just hardcoding 0x1999 here. */
+        case 0x1999:
+            ROS_APP_ReportRosoutMsg((ROS_APP_RosoutTlm_t *) SBBufPtr);
             break;
 
         default:
@@ -355,6 +372,40 @@ int32 ROS_APP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg)
 } /* End of ROS_APP_ReportHousekeeping() */
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
+/*  Name:  ROS_APP_ReportRosoutMsg                                            */
+/*                                                                            */
+/*  Purpose:                                                                  */
+/*         This function is triggered in response to a /rosout telemetry msg  */
+/*                                                                            */
+/* * * * * * * * * * * * * * * * * * * * * * * *  * * * * * * *  * *  * * * * */
+int32 ROS_APP_ReportRosoutMsg(const ROS_APP_RosoutTlm_t *Msg)
+{
+#if 0  /* Change this to 1 if you want to see the /rosout message */
+    printf("\n\n/rosout contains "
+                      "sec=%lu, "
+                      "nsec=%lu, "
+                      "level=%d, "
+                      "name=%s, " 
+                      "msg=%s, "
+                      "file=%s, "
+                      "function=%s, "
+                      "line=%lu" 
+                      "\n\n",
+                      (unsigned long) Msg->Payload.sec, 
+                      (unsigned long) Msg->Payload.nsec, 
+                      Msg->Payload.level, 
+                      Msg->Payload.name, 
+                      Msg->Payload.msg, 
+                      Msg->Payload.file, 
+                      Msg->Payload.function, 
+                      (unsigned long) Msg->Payload.line);
+#endif
+
+    return CFE_SUCCESS;
+
+} /* End of ROS_APP_ReportRosoutMsg() */
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
 /*                                                                            */
 /* ROS_APP_Noop -- ROS NOOP commands                                        */
 /*                                                                            */
@@ -379,10 +430,16 @@ int32 ROS_APP_Noop(const ROS_APP_NoopCmd_t *Msg)
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
 void ROS_APP_HelloCmd(const ROS_APP_NoopCmd_t *Msg)
 {
+    CFE_TIME_SysTime_t current_met;
+
     ROS_APP_Data.CmdCounter++;
 
-    CFE_EVS_SendEvent(ROS_APP_HELLO_WORLD_INF_EID, CFE_EVS_EventType_INFORMATION, "ros: Hello, ros! %s",
-                      ROS_APP_VERSION);
+    current_met = CFE_TIME_GetMET();
+
+    CFE_EVS_SendEvent(ROS_APP_HELLO_WORLD_INF_EID, CFE_EVS_EventType_INFORMATION, "ros: Hello, ros! %s.  Time is %lu sec and %lu subsec",
+                      ROS_APP_VERSION,
+                      (unsigned long) current_met.Seconds, 
+                      (unsigned long) current_met.Subseconds);
 
 } /* End of ROS_APP_HelloCmd */
 

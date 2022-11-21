@@ -106,6 +106,7 @@ int32 ROS_APP_Init(void);
 void  ROS_APP_ProcessCommandPacket(CFE_SB_Buffer_t *SBBufPtr);
 void  ROS_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr);
 int32 ROS_APP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg);
+int32 ROS_APP_ReportRosoutMsg(const ROS_APP_RosoutTlm_t *Msg);
 int32 ROS_APP_ResetCounters(const ROS_APP_ResetCountersCmd_t *Msg);
 int32 ROS_APP_Process(const ROS_APP_ProcessCmd_t *Msg);
 int32 ROS_APP_Noop(const ROS_APP_NoopCmd_t *Msg);
