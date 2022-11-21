@@ -79,6 +79,29 @@ typedef struct
     ROS_APP_HkTlm_Payload_t Payload;   /**< \brief Telemetry payload */
 } ROS_APP_HkTlm_t;
 
+#define ROS_APP_ROSOUT_TLM_NAME_BYTES (32)
+#define ROS_APP_ROSOUT_TLM_MSG_BYTES  (128)
+#define ROS_APP_ROSOUT_TLM_FILE_BYTES (64)
+#define ROS_APP_ROSOUT_TLM_FUNCTION_BYTES (32)
+
+typedef struct
+{
+    uint32 sec;
+    uint32 nsec;
+    uint8 level;
+    uint8 name[ROS_APP_ROSOUT_TLM_NAME_BYTES];
+    uint8 msg[ROS_APP_ROSOUT_TLM_MSG_BYTES];
+    uint8 file[ROS_APP_ROSOUT_TLM_FILE_BYTES];
+    uint8 function[ROS_APP_ROSOUT_TLM_FUNCTION_BYTES];
+    uint32 line;
+} ROS_APP_Rosout_Payload_t;
+
+typedef struct
+{
+    CFE_MSG_TelemetryHeader_t  TlmHeader; /**< \brief Telemetry header */
+    ROS_APP_Rosout_Payload_t Payload; /**< \brief Message format for rosout/ topic messages */
+} ROS_APP_RosoutTlm_t;
+
 #endif /* _ros_app_msg_h_ */
 
 /************************/
