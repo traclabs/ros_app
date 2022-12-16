@@ -204,8 +204,7 @@ int32 ROS_APP_Init(void)
     /*
     ** Subscribe to the /rosout telemetry packets.
     */
-    /* TODO: have email out to cFE mailing list on how to resolve CPU2 mids instead of just hardcoding 0x1999 here. */
-    status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(0x1999), ROS_APP_Data.CommandPipe);
+    status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(ROS_APP_ROSOUT_INFO_MID), ROS_APP_Data.CommandPipe);
     if (status != CFE_SUCCESS)
     {
         CFE_ES_WriteToSysLog("ros App: Error Subscribing to /rosout topic, RC = 0x%08lX\n", (unsigned long)status);
@@ -260,8 +259,7 @@ void ROS_APP_ProcessCommandPacket(CFE_SB_Buffer_t *SBBufPtr)
             ROS_APP_ReportHousekeeping((CFE_MSG_CommandHeader_t *)SBBufPtr);
             break;
 
-        /* TODO: have email out to cFE mailing list on how to resolve CPU2 mids instead of just hardcoding 0x1999 here. */
-        case 0x1999:
+        case ROS_APP_ROSOUT_INFO_MID:
             ROS_APP_ReportRosoutMsg((ROS_APP_RosoutTlm_t *) SBBufPtr);
             break;
 
@@ -380,8 +378,18 @@ int32 ROS_APP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg)
 /* * * * * * * * * * * * * * * * * * * * * * * *  * * * * * * *  * *  * * * * */
 int32 ROS_APP_ReportRosoutMsg(const ROS_APP_RosoutTlm_t *Msg)
 {
-#if 0  /* Change this to 1 if you want to see the /rosout message */
+   CFE_TIME_SysTime_t msg_time;
+   char time_text_buffer[2048];
+
+#if 1  /* 0 for no output, 1 if you want to see the /rosout message */
+
+   CFE_MSG_GetMsgTime((const CFE_MSG_Message_t *) Msg, &msg_time);
+   CFE_TIME_Print(time_text_buffer, msg_time);
+
     printf("\n\n/rosout contains "
+                      "secondary header time = %s, "
+                      "secondary header sec = %lu "
+                      "secondary header subsec = %lu "
                       "sec=%lu, "
                       "nsec=%lu, "
                       "level=%d, "
@@ -391,6 +399,9 @@ int32 ROS_APP_ReportRosoutMsg(const ROS_APP_RosoutTlm_t *Msg)
                       "function=%s, "
                       "line=%lu" 
                       "\n\n",
+                      time_text_buffer,
+                      (unsigned long) msg_time.Seconds,
+                      (unsigned long) msg_time.Subseconds,
                       (unsigned long) Msg->Payload.sec, 
                       (unsigned long) Msg->Payload.nsec, 
                       Msg->Payload.level, 
