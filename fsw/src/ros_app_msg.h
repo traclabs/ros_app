@@ -90,13 +90,13 @@ typedef struct
     uint32 nsec;
     uint8 level;
     bool name_truncated;
-    uint8 name[ROS_APP_ROSOUT_TLM_NAME_BYTES];
+    char name[ROS_APP_ROSOUT_TLM_NAME_BYTES];
     bool msg_truncated;
-    uint8 msg[ROS_APP_ROSOUT_TLM_MSG_BYTES];
+    char msg[ROS_APP_ROSOUT_TLM_MSG_BYTES];
     bool file_truncated;
-    uint8 file[ROS_APP_ROSOUT_TLM_FILE_BYTES];
+    char file[ROS_APP_ROSOUT_TLM_FILE_BYTES];
     bool function_truncated;
-    uint8 function[ROS_APP_ROSOUT_TLM_FUNCTION_BYTES];
+    char function[ROS_APP_ROSOUT_TLM_FUNCTION_BYTES];
     uint32 line;
 } ROS_APP_Rosout_Payload_t;
 
