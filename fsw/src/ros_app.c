@@ -207,10 +207,35 @@ int32 ROS_APP_Init(void)
     status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(ROS_APP_ROSOUT_INFO_MID), ROS_APP_Data.CommandPipe);
     if (status != CFE_SUCCESS)
     {
-        CFE_ES_WriteToSysLog("ros App: Error Subscribing to /rosout topic, RC = 0x%08lX\n", (unsigned long)status);
+        CFE_ES_WriteToSysLog("ros App: Error Subscribing to /rosout INFO topic, RC = 0x%08lX\n", (unsigned long)status);
 
         return (status);
     }
+
+    status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(ROS_APP_ROSOUT_ERROR_MID), ROS_APP_Data.CommandPipe);
+    if (status != CFE_SUCCESS)
+    {
+        CFE_ES_WriteToSysLog("ros App: Error Subscribing to /rosout ERROR topic, RC = 0x%08lX\n", (unsigned long)status);
+
+        return (status);
+    }
+
+    status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(ROS_APP_ROSOUT_FATAL_MID), ROS_APP_Data.CommandPipe);
+    if (status != CFE_SUCCESS)
+    {
+        CFE_ES_WriteToSysLog("ros App: Error Subscribing to /rosout FATAL topic, RC = 0x%08lX\n", (unsigned long)status);
+
+        return (status);
+    }
+
+    status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(ROS_APP_ROSOUT_WARN_MID), ROS_APP_Data.CommandPipe);
+    if (status != CFE_SUCCESS)
+    {
+        CFE_ES_WriteToSysLog("ros App: Error Subscribing to /rosout WARN topic, RC = 0x%08lX\n", (unsigned long)status);
+
+        return (status);
+    }
+
 
     /*
     ** Register Table(s)
@@ -260,6 +285,15 @@ void ROS_APP_ProcessCommandPacket(CFE_SB_Buffer_t *SBBufPtr)
             break;
 
         case ROS_APP_ROSOUT_INFO_MID:
+            ROS_APP_ReportRosoutMsg((ROS_APP_RosoutTlm_t *) SBBufPtr);
+            break;
+        case ROS_APP_ROSOUT_WARN_MID:
+            ROS_APP_ReportRosoutMsg((ROS_APP_RosoutTlm_t *) SBBufPtr);
+            break;
+        case ROS_APP_ROSOUT_ERROR_MID:
+            ROS_APP_ReportRosoutMsg((ROS_APP_RosoutTlm_t *) SBBufPtr);
+            break;
+        case ROS_APP_ROSOUT_FATAL_MID:
             ROS_APP_ReportRosoutMsg((ROS_APP_RosoutTlm_t *) SBBufPtr);
             break;
 
@@ -386,18 +420,18 @@ int32 ROS_APP_ReportRosoutMsg(const ROS_APP_RosoutTlm_t *Msg)
    CFE_MSG_GetMsgTime((const CFE_MSG_Message_t *) Msg, &msg_time);
    CFE_TIME_Print(time_text_buffer, msg_time);
 
-    printf("\n\n/rosout contains "
-                      "secondary header time = %s, "
-                      "secondary header sec = %lu "
-                      "secondary header subsec = %lu "
-                      "sec=%lu, "
-                      "nsec=%lu, "
-                      "level=%d, "
-                      "name=%s, " 
-                      "msg=%s, "
-                      "file=%s, "
-                      "function=%s, "
-                      "line=%lu" 
+    printf("\n/rosout contains:"
+                      "\n\tsecondary header time = %s, "
+                      "\n\tsecondary header sec = %lu "
+                      "\n\tsecondary header subsec = %lu "
+                      "\n\tsec=%lu, "
+                      "\n\tnsec=%lu, "
+                      "\n\tlevel=%d, "
+                      "\n\tname=%s, " 
+                      "\n\tmsg=%s, "
+                      "\n\tfile=%s, "
+                      "\n\tfunction=%s, "
+                      "\n\tline=%lu" 
                       "\n\n",
                       time_text_buffer,
                       (unsigned long) msg_time.Seconds,
