@@ -412,10 +412,10 @@ int32 ROS_APP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg)
 /* * * * * * * * * * * * * * * * * * * * * * * *  * * * * * * *  * *  * * * * */
 int32 ROS_APP_ReportRosoutMsg(const ROS_APP_RosoutTlm_t *Msg)
 {
+#if 0  /* 0 for no output, 1 if you want to see the /rosout message */
    CFE_TIME_SysTime_t msg_time;
    char time_text_buffer[2048];
 
-#if 1  /* 0 for no output, 1 if you want to see the /rosout message */
 
    CFE_MSG_GetMsgTime((const CFE_MSG_Message_t *) Msg, &msg_time);
    CFE_TIME_Print(time_text_buffer, msg_time);
