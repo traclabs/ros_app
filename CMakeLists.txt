@@ -9,3 +9,7 @@ add_cfe_app(ros_app fsw/src/ros_app.c)
 # Add table
 add_cfe_tables(rosAppTable fsw/tables/ros_app_tbl.c)
 
+target_include_directories(ros_app PUBLIC
+    fsw/mission_inc
+    fsw/platform_inc
+    )
